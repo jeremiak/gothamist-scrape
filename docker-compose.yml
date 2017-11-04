@@ -1,0 +1,30 @@
+version: '2'
+services:
+  load:
+    build: .
+    command: ["node", "src/load.js"]
+    depends_on:
+      - redis
+    volumes:
+      - ./src:/app/src
+  queue:
+    build: .
+    command: ["node", "src/queue.js"]
+    depends_on:
+      - redis
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+  worker:
+    build: .
+    command: ["node", "src/worker.js"]
+    depends_on:
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
