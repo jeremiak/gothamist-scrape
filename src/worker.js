@@ -29,7 +29,7 @@ const queue = kue.createQueue({
 // queue.process
 // call done() with nothing if successful, with an Error if not
 
-queue.process(NEED_POST_URLS, (job, done) => {
+queue.process(NEED_POST_URLS, (job, ctx, done) => {
   const { author, page } = job.data;
   const root =
     'https://web.archive.org/web/20170616024218/http://gothamist.com/author';
@@ -39,6 +39,17 @@ queue.process(NEED_POST_URLS, (job, done) => {
   console.log(`requesting ${archiveUrl} to get a bunch of links`);
   request(archiveUrl, (httpError, response, body) => {
     if (httpError) {
+      if (httpError.code === 'ECONNREFUSED') {
+        return ctx.pause(2000, err => {
+          console.log('pausing worker because too many connections');
+          done(new Error(httpError));
+          setTimeout(function() {
+            console.log('resuming worker now');
+            ctx.resume();
+          }, 5000);
+        });
+      }
+
       return done(new Error(httpError));
     }
 
@@ -54,8 +65,6 @@ queue.process(NEED_POST_URLS, (job, done) => {
           title: `${url} by ${author}`
         };
       });
-
-    console.log('URLS', urls);
 
     const addUrlToQueue = (urlObj, cb) => {
       queue
@@ -75,25 +84,23 @@ queue.process(NEED_POST_URLS, (job, done) => {
   });
 });
 
-const dateIsBefore2013 = dateStr => {
-  if (
-    dateStr.includes('2009') ||
-    dateStr.includes('2010') ||
-    dateStr.includes('2011') ||
-    dateStr.includes('2012')
-  ) {
-    return true;
-  }
-  return false;
-};
-
-queue.process(NEED_POST_CONTENT, 2, (job, done) => {
+queue.process(NEED_POST_CONTENT, 2, (job, ctx, done) => {
   const url = job.data.url;
 
   console.log(`requesting ${url} to get the post content`);
-  request(url, (error, response, body) => {
-    if (error) {
-      return done(new Error(error));
+  request(url, (httpError, response, body) => {
+    if (httpError) {
+      if (httpError.code === 'ECONNREFUSED') {
+        return ctx.pause(2000, err => {
+          console.log('pausing worker because too many connections');
+          done(new Error(httpError));
+          setTimeout(function() {
+            ctx.resume();
+          }, 5000);
+        });
+      }
+
+      return done(new Error(httpError));
     }
 
     const $ = cheerio.load(body);
@@ -131,7 +138,7 @@ queue.process(NEED_POST_CONTENT, 2, (job, done) => {
   });
 });
 
-queue.process(NEED_TO_WRITE_FILE, 2, (job, done) => {
+queue.process(NEED_TO_WRITE_FILE, 2, (job, ctx, done) => {
   const { author, date, title, html } = job.data;
   const filename = `${kebabCase(title)}.md`;
   const filepath = path.join('/app/data', kebabCase(author), filename);
