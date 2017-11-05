@@ -1,6 +1,6 @@
 const kue = require('kue');
 const range = require('lodash.range');
-const { NEED_POST_URLS } = require('./constants');
+const { AUTHORS, NEED_POST_URLS } = require('./constants');
 
 const queue = kue.createQueue({
   redis: {
@@ -8,16 +8,7 @@ const queue = kue.createQueue({
   }
 });
 
-const authors = [
-  'Ben Yakas',
-  'Dan Dickinson',
-  'Emma Whitford',
-  'Jen Carlson',
-  'Jen Chung',
-  'Nell Casey'
-];
-
-authors.forEach(author => {
+AUTHORS.forEach(author => {
   const pages = range(1, 21);
   pages.forEach(page => {
     const title = `${author}-page-${page}`;

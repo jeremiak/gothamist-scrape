@@ -10,6 +10,7 @@
     "kue": "^0.11.6",
     "lodash.kebabcase": "^4.1.1",
     "lodash.range": "^3.2.0",
+    "lodash.startcase": "^4.4.0",
     "mkdirp": "^0.5.1",
     "request": "^2.83.0"
   }

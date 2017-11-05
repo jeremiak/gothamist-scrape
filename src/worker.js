@@ -4,13 +4,17 @@ const querystring = require('querystring');
 
 const { each: asyncEach } = require('async');
 const cheerio = require('cheerio');
-const kebab = require('lodash.kebabcase');
+const kebabCase = require('lodash.kebabcase');
 const kue = require('kue');
 const mkdirp = require('mkdirp');
 const range = require('lodash.range');
 const request = require('request');
+const startCase = require('lodash.startcase');
 
 const {
+  AUTHORS,
+  HAS_NO_TITLE,
+  HAS_UNMATCHED_AUTHOR,
   NEED_POST_CONTENT,
   NEED_POST_URLS,
   NEED_TO_WRITE_FILE
@@ -71,7 +75,19 @@ queue.process(NEED_POST_URLS, (job, done) => {
   });
 });
 
-queue.process(NEED_POST_CONTENT, (job, done) => {
+const dateIsBefore2013 = dateStr => {
+  if (
+    dateStr.includes('2009') ||
+    dateStr.includes('2010') ||
+    dateStr.includes('2011') ||
+    dateStr.includes('2012')
+  ) {
+    return true;
+  }
+  return false;
+};
+
+queue.process(NEED_POST_CONTENT, 2, (job, done) => {
   const url = job.data.url;
 
   console.log(`requesting ${url} to get the post content`);
@@ -84,10 +100,18 @@ queue.process(NEED_POST_CONTENT, (job, done) => {
     const author = $('.byline .author a').text();
     const date = $('.byline abbr').text();
     const html = $('.entry-body').html();
-    const title = $('.entry-header h1').text();
+    let title = $('.entry-header h1').text();
+    let queueName = NEED_TO_WRITE_FILE;
+
+    if (title === '') {
+      queueName = HAS_NO_TITLE;
+      title = url;
+    } else if (!AUTHORS.includes(startCase(author))) {
+      queueName = HAS_UNMATCHED_AUTHOR;
+    }
 
     queue
-      .create(NEED_TO_WRITE_FILE, {
+      .create(queueName, {
         url,
         author,
         date,
@@ -107,12 +131,12 @@ queue.process(NEED_POST_CONTENT, (job, done) => {
   });
 });
 
-queue.process(NEED_TO_WRITE_FILE, (job, done) => {
+queue.process(NEED_TO_WRITE_FILE, 2, (job, done) => {
   const { author, date, title, html } = job.data;
-  const filename = `${kebab(title)}.md`;
-  const filepath = path.join('/app/data', kebab(author), filename);
+  const filename = `${kebabCase(title)}.md`;
+  const filepath = path.join('/app/data', kebabCase(author), filename);
   const file = `---\nauthor: ${author}\ndate: ${date}\ntitle: ${title}\n---\n\n${html}`;
-  mkdirp(path.join('/app/data', kebab(author)), mkErr => {
+  mkdirp(path.join('/app/data', kebabCase(author)), mkErr => {
     if (mkErr) return done(new Error(mkErr));
 
     console.log(`writing the data to ${filepath}`, {
