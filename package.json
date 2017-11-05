@@ -8,6 +8,7 @@
     "cheerio": "^1.0.0-rc.2",
     "express": "^4.16.2",
     "kue": "^0.11.6",
+    "kue-ui-express": "^1.0.2",
     "lodash.kebabcase": "^4.1.1",
     "lodash.range": "^3.2.0",
     "lodash.startcase": "^4.4.0",
