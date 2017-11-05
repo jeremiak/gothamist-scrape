@@ -6,12 +6,16 @@
 
 ## installation
 
-this runs in docker, so you shouldn't need anything besides that. make sure that the `authors` array is up to date (it is in `/src/load.js`) and then just run `docker-compose up --build`.
+this runs in docker, so you shouldn't need anything besides that. make sure that the `AUTHORS` array is up to date (it is in `/src/constants.js`) and then just run `docker-compose up --build`.
 
 you can see the queue activity at [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ## running
 
-you can use the `--scale` flag with `docker-compose` to restart the app without re-loading the initial data and setting the number of `worker` containers with `docker-compose up --scale worker=2`.
+make sure you have a `data` directory in this project folder (a sibling to `src`). this is where the markdown files will be written.
 
-the generated markdown files should be sorted by author in `/data`
+you can use the `--scale` flag with `docker-compose` to restart the app without re-loading the initial data and setting the number of `worker` containers with `docker-compose up --scale load=0 --scale worker=2`.
+
+## output
+
+markdown files should be written into the `data` directory you created. i've been pushing updates occasionally from this app to [jeremiak/gothamist-scrape-data](https://github.com/jeremiak/gothamist-scrape-data).
